@@ -42,6 +42,26 @@ class ArmorRemoverHandler (plugin: Plugin) : Listener {
 
             return remover
         }
+
+        fun removeArmor(player: Player, slot: EquipmentSlot?, sendTowards: Location?) {
+            val slots = slot?.let { arrayOf(slot) } ?: EquipmentSlot.values()
+            for(currentSlot in slots) {
+                player.inventory.getItem(currentSlot)?.let {
+                    if(it.amount == 0 || it.type == Material.AIR) return@let
+
+                    val item = player.world.dropItem(player.eyeLocation, it)
+                    item.thrower = player.uniqueId
+                    item.persistentDataContainer.set(NOPICKUP_KEY, PersistentDataType.LONG, System.currentTimeMillis() + (10 * 1000))
+                    if(sendTowards != null) {
+                        item.velocity = sendTowards.toVector().subtract(player.eyeLocation.toVector()).normalize().multiply(0.3)
+                    } else {
+                        item.velocity = Vector(0, 0, 0)
+                    }
+                    player.world.playSound(player.location, Sound.ENTITY_ITEM_FRAME_REMOVE_ITEM, 1.0f, 1.2f)
+                    it.amount = 0
+                }
+            }
+        }
     }
     
     init {
@@ -89,25 +109,5 @@ class ArmorRemoverHandler (plugin: Plugin) : Listener {
         }
         
         event.isCancelled = true
-    }
-    
-    private fun removeArmor(player: Player, slot: EquipmentSlot?, sendTowards: Location?) {
-        val slots = slot?.let { arrayOf(slot) } ?: EquipmentSlot.values()
-        for(currentSlot in slots) {
-            player.inventory.getItem(currentSlot)?.let { 
-                if(it.amount == 0 || it.type == Material.AIR) return@let
-                
-                val item = player.world.dropItem(player.eyeLocation, it)
-                item.thrower = player.uniqueId
-                item.persistentDataContainer.set(NOPICKUP_KEY, PersistentDataType.LONG, System.currentTimeMillis() + (10 * 1000))
-                if(sendTowards != null) {
-                    item.velocity = sendTowards.toVector().subtract(player.eyeLocation.toVector()).normalize().multiply(0.3)
-                } else {
-                    item.velocity = Vector(0, 0, 0)
-                }
-                player.world.playSound(player.location, Sound.ENTITY_ITEM_FRAME_REMOVE_ITEM, 1.0f, 1.2f)
-                it.amount = 0
-            }
-        }
     }
 }
