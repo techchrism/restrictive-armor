@@ -62,18 +62,25 @@ class BlindfoldHelmetHandler(plugin: Plugin) : Listener {
             if (hadHelmet.contains(player.uniqueId)) {
                 if (!player.wearingBlindfoldHelmet()) {
                     // Player took off helmet
-                    player.scoreboard = Bukkit.getScoreboardManager()!!.mainScoreboard
+                    player.scoreboard.getTeam("nametag-hide")?.unregister()
                     hadHelmet.remove(player.uniqueId)
                     player.removePotionEffect(PotionEffectType.BLINDNESS)
                 }
             } else {
                 if (player.wearingBlindfoldHelmet()) {
                     // Player put on helmet
-                    val scoreboard = Bukkit.getScoreboardManager()!!.newScoreboard
-                    val team = scoreboard.registerNewTeam("nametag-hide")
-                    team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
-                    Bukkit.getOnlinePlayers().forEach { team.addEntry(it.name) }
-                    player.scoreboard = scoreboard
+                    
+                    // Give the player a new scoreboard if they have the default one
+                    if(player.scoreboard == Bukkit.getScoreboardManager()?.mainScoreboard) {
+                        player.scoreboard = Bukkit.getScoreboardManager()!!.newScoreboard
+                    }
+                    // Add a new team for hiding nametags
+                    val scoreboard = player.scoreboard
+                    if(scoreboard.getTeam("nametag-hide") == null) {
+                        val newTeam = scoreboard.registerNewTeam("nametag-hide")
+                        newTeam.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER)
+                        Bukkit.getOnlinePlayers().forEach { newTeam.addEntry(it.name) }
+                    }
                     
                     hadHelmet.add(player.uniqueId)
                     player.addPotionEffect(PotionEffect(PotionEffectType.BLINDNESS, Int.MAX_VALUE, 1, false, false, false))
